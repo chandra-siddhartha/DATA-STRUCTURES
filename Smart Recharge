@@ -1,0 +1,215 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Plan node for recharge options
+typedef struct Plan {
+    char description[100];
+    float price;
+    struct Plan* next;
+} Plan;
+
+typedef struct {
+    Plan* dataPacks;
+    Plan* intlRoaming;
+    Plan* natlRoaming;
+    Plan* specialRecharge;
+} PlanCategories;
+
+// Stack for UPI PIN verification
+#define MAX 6
+typedef struct {
+    int top;
+    char digits[MAX];
+} Stack;
+
+// Stack functions
+void init(Stack* s) {
+    s->top = -1;
+}
+int isFull(Stack* s) {
+    return s->top == MAX - 1;
+}
+int isEmpty(Stack* s) {
+    return s->top == -1;
+}
+void push(Stack* s, char digit) {
+    if (!isFull(s)) {
+        s->digits[++(s->top)] = digit;
+    }
+}
+char pop(Stack* s) {
+    if (!isEmpty(s)) {
+        return s->digits[(s->top)--];
+    }
+    return '\0';
+}
+
+// Linked list functions
+Plan* addPlan(Plan* head, const char* desc, float price) {
+    Plan* newPlan = (Plan*)malloc(sizeof(Plan));
+    strcpy(newPlan->description, desc);
+    newPlan->price = price;
+    newPlan->next = head;
+    return newPlan;
+}
+
+void displayPlans(Plan* head) {
+    int i = 1;
+    while (head != NULL) {
+        printf("  %d. %s - ₹%.2f\n", i++, head->description, head->price);
+        head = head->next;
+    }
+}
+
+void initializePlans(PlanCategories* pc) {
+    pc->dataPacks = addPlan(pc->dataPacks, "2GB/day for 28 days", 249);
+    pc->dataPacks = addPlan(pc->dataPacks, "1.5GB/day for 56 days", 399);
+    pc->dataPacks = addPlan(pc->dataPacks, "3GB/day for 84 days", 699);
+
+    pc->intlRoaming = addPlan(pc->intlRoaming, "USA Pack: 1GB + 100 mins (7 days)", 999);
+    pc->intlRoaming = addPlan(pc->intlRoaming, "UK Pack: 500MB + 50 mins (5 days)", 799);
+
+    pc->natlRoaming = addPlan(pc->natlRoaming, "Unlimited calls + 1GB/day in all states (28 days)", 299);
+    pc->natlRoaming = addPlan(pc->natlRoaming, "Roaming in North + 2GB/day (14 days)", 199);
+
+    pc->specialRecharge = addPlan(pc->specialRecharge, "Weekend Binge + Night Data Unlimited (30 days)", 109);
+    pc->specialRecharge = addPlan(pc->specialRecharge, "OTT Pack + 5GB Bonus (56 days)", 459);
+}
+
+int main() {
+    char mobile[11], state[50], sim[20];
+    int simChoice, stateChoice, categoryChoice, packChoice;
+    Plan* selectedList = NULL;
+    Plan* selectedPlan = NULL;
+    PlanCategories categories = {NULL, NULL, NULL, NULL};
+
+    // SIM and States
+    char* sims[] = {"Jio", "Airtel", "Vi", "BSNL"};
+    char* states[] = {
+        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+        "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+        "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+        "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+        "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+    };
+    int numStates = sizeof(states) / sizeof(states[0]);
+
+    printf("\n====== Mobile Recharge Portal ======\n");
+
+    // Step 1: Mobile Number
+    printf("\n[Step 1] Enter your 10-digit Mobile Number: ");
+    scanf("%s", mobile);
+
+    // Step 2: Select State
+    printf("\n[Step 2] Select Your State:\n");
+    for (int i = 0; i < numStates; i++) {
+        printf("  %2d. %s\n", i + 1, states[i]);
+    }
+    printf("Enter your choice: ");
+    scanf("%d", &stateChoice);
+    if (stateChoice < 1 || stateChoice > numStates) {
+        printf("Invalid state selected.\n");
+        return 1;
+    }
+    strcpy(state, states[stateChoice - 1]);
+
+    // Step 3: Select SIM provider
+    printf("\n[Step 3] Select Your SIM Provider:\n");
+    for (int i = 0; i < 4; i++) {
+        printf("  %d. %s\n", i + 1, sims[i]);
+    }
+    printf("Enter your choice: ");
+    scanf("%d", &simChoice);
+    if (simChoice < 1 || simChoice > 4) {
+        printf("Invalid SIM selection.\n");
+        return 1;
+    }
+    strcpy(sim, sims[simChoice - 1]);
+
+    // Step 4: Recharge category
+    initializePlans(&categories);
+    printf("\n[Step 4] Choose Recharge Category:\n");
+    printf("  1. Data Packs\n  2. International Roaming\n  3. National Roaming\n  4. Special Recharges\n");
+    printf("Enter your choice: ");
+    scanf("%d", &categoryChoice);
+
+    switch (categoryChoice) {
+        case 1: selectedList = categories.dataPacks; break;
+        case 2: selectedList = categories.intlRoaming; break;
+        case 3: selectedList = categories.natlRoaming; break;
+        case 4: selectedList = categories.specialRecharge; break;
+        default: printf("Invalid category.\n"); return 1;
+    }
+
+    // Step 5: Select plan
+    printf("\n[Step 5] Available Plans:\n");
+    displayPlans(selectedList);
+    printf("Enter the pack number you want: ");
+    scanf("%d", &packChoice);
+
+    selectedPlan = selectedList;
+    for (int i = 1; i < packChoice && selectedPlan != NULL; i++) {
+        selectedPlan = selectedPlan->next;
+    }
+
+    if (selectedPlan == NULL) {
+        printf("Invalid plan selected.\n");
+        return 1;
+    }
+
+    printf("\n>>> You selected: \"%s\" - ₹%.2f\n", selectedPlan->description, selectedPlan->price);
+
+    // Step 6: UPI PIN entry
+    Stack upi;
+    init(&upi);
+    char digit;
+    printf("\n[Step 6] Enter your 6-digit UPI PIN (one digit at a time):\n");
+    for (int i = 0; i < 6; i++) {
+        printf("Digit %d: ", i + 1);
+        scanf(" %c", &digit);
+        push(&upi, digit);
+    }
+
+    // Mask PIN
+    printf("\nVerifying UPI PIN...\nUPI Verified: ");
+    while (!isEmpty(&upi)) {
+        printf("*");
+        pop(&upi);
+    }
+
+    // Confirmation
+    printf("\n\n====== Recharge Successful! ======\n");
+    printf("Mobile Number : %s\n", mobile);
+    printf("State         : %s\n", state);
+    printf("SIM Provider  : %s\n", sim);
+    printf("Plan Selected : %s\n", selectedPlan->description);
+    printf("Amount Paid   : ₹%.2f\n", selectedPlan->price);
+    printf("==================================\n");
+
+    // Free memory
+    Plan *temp;
+    while (categories.dataPacks) {
+        temp = categories.dataPacks;
+        categories.dataPacks = categories.dataPacks->next;
+        free(temp);
+    }
+    while (categories.intlRoaming) {
+        temp = categories.intlRoaming;
+        categories.intlRoaming = categories.intlRoaming->next;
+        free(temp);
+    }
+    while (categories.natlRoaming) {
+        temp = categories.natlRoaming;
+        categories.natlRoaming = categories.natlRoaming->next;
+        free(temp);
+    }
+    while (categories.specialRecharge) {
+        temp = categories.specialRecharge;
+        categories.specialRecharge = categories.specialRecharge->next;
+        free(temp);
+    }
+
+    return 0;
+}
